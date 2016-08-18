@@ -1,0 +1,41 @@
+<!DOCTYPE html >
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gsb">
+	<link rel="icon" href="../../resources/ui/image/home.gif" type="/image/x-icon">
+	<link rel="stylesheet" type="text/css" href="../../resources/ui/themes/bootstrap/easyui.css">
+	<link rel="stylesheet" type="text/css" href="../../resources/ui/themes/icon.css">
+	<script type="text/javascript" src="../../resources/ui/jquery.min.js"></script>
+	<script type="text/javascript" src="../../resources/ui/jquery.easyui.min.js"></script>
+<title>新建学校</title>
+<style type="text/css">
+	.forminput{
+		width:77px;
+	}
+	.filedmes{
+	font-family: 微软雅黑;
+	zoom:1.1;
+	}
+</style>
+</head>
+<body>
+
+	<div id="school-main" style="position:absolute;top:80%;left:45%;margin: -100px 0px 0px -100px;transform: scale(1.5);">
+		<form id="newschool"  method="post" name="fileupload" enctype="multipart/form-data" >	
+	<span>
+		
+			<input type="file"  style="border:gray solid 1px ;zoom:1.1" name="filepath" />	
+			
+			<div style="height: 15px"></div>
+			
+			<a class="filedmes">校名:</a>  <input id="schoolName" class="forminput" type="text">
+			<a class="filedmes">后缀:</a>  <input id="schoolSymbol" class="forminput"  type="text" >
+		
+	<span>
+			<a id="submit-button"  class="easyui-linkbutton" style="position: relative;left: 0px;top:10px;width:60px;height: 20px">提交</a>		
+		 </form>
+		 
+	</div>
+
+</body>
+</html>

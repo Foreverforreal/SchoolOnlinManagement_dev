@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>学校上线管理</title>
+
+<link rel="stylesheet" type="text/css" href="resources/ui/themes/bootstrap/easyui.css">
+<link rel="stylesheet" type="text/css" href="resources/ui/themes/icon.css">
+<script type="text/javascript" src="resources/ui/jquery.min.js"></script>
+<script type="text/javascript" src="resources/ui/jquery.easyui.min.js"></script>
+
+		<style type="text/css">
+		#mainId {
+			margin-left: auto;
+			margin-right: auto;
+			position:relative;
+			top:80px;
+		}
+
+		.easyui-linkbutton {
+			margin: auto;
+			width: 100px;
+		}
+
+		.onlinebutton {
+			margin-left: auto;
+			margin-right: auto;
+			width: 70%;
+			height: 40px;
+		}
+		.replenishbutton {
+			margin-left: auto;
+			margin-right: auto;
+			width: 70%;
+			height: 40px;
+		}
+		body {
+			opacity: 0.9;
+			filter: alpha(opacity=80);  
+			opacity: 0.9;
+		}
+		</style>
+</head>
+<body  background="E:\workspace-sts-3.7.1.RELEASE\SchoolOnlinManagement\src\main\webapp\resources\ui\image\body.gif">
+	<div id="mainId" class="easyui-layout" style="width: 1200px; height: 800px;">
+	
+	
+		<div data-options="region:'north',iconCls:'icon-help',title:'数据',split:true" style="height: 250px;"></div>
+		
+		
+		<div data-options="region:'south',title:'状态统计',split:true" style="height: 200px;"></div>
+		
+		
+		<div data-options="region:'east',iconCls:'icon-reload',title:'数据库'" style="width: 200px;">
+			<ul id="proDatabase" class="easyui-tree">
+				<li><span>Pro数据库</span>
+					<ul class="easyui-tree">
+						<li><span>instance1</span></li>
+						<li><span>instance2</span></li>
+						<li><span>instance3</span></li>
+					</ul></li>
+			</ul>
+			<ul id="devDatabase" class="easyui-tree">
+				<li><span>Dev数据库</span></li>
+			</ul>
+			<ul id="locDatabase" class="easyui-tree">
+				<li><span>Loc数据库</span></li>
+			</ul>
+		</div>
+		
+		
+		<div data-options="region:'west',title:'操作目录',split:true" style="width: 150px;">
+			<div id="fuction" class="easyui-accordion" data-options="fit:true" style="width: 300px; height: 200px;">
+			
+				<div id='schoolonline' title="学校上线" data-options="iconCls:'icon-reload'" style="overflow: auto;">
+					<br>
+					<div class="onlinebutton">
+						<a id="onlint-pro" href="#" class="easyui-linkbutton">Pro学校</a>
+					</div>
+					<div class="onlinebutton">
+						<a id="onlint-dev" href="#" class="easyui-linkbutton">Dev学校</a>
+					</div>
+					<div class="onlinebutton">
+						<a id="onlint-d2p" href="#" class="easyui-linkbutton">学校复制</a>
+					</div>
+					<div class="onlinebutton">
+						<a id="onlint-loc" href="#" class="easyui-linkbutton">LocalDB</a>
+					</div>
+				</div>
+				
+				<div title="数据补充" data-options="iconCls:'icon-reload'" style="overflow: auto;">
+					<br>
+					<div class="replenishbutton">
+							<a id="studentreplenish" href="#" class="easyui-linkbutton">补充学生</a>
+					</div>
+				</div>
+				
+				<div title="信息统计" data-options="iconCls:'icon-reload'"
+					style="overflow: auto;"></div>
+			</div>
+		</div>
+		
+		
+	<div id='center' data-options="region:'center',border:false" style="padding: 5px;">
+		<div id='centernavigation' class="easyui-tabs" data-options="fit:true,border:false,plain:true"></div>	
+	</div>
+	
+	</div>
+
+
+	<script type="text/javascript">
+		$(".easyui-linkbutton").attr("data-options","iconCls:'icon-add',iconAlign:'left'");
+		
+		
+		$("#studentreplenish").bind('click',function(){
+			var flag=$("#centernavigation").tabs("exists",'补充学生')
+			if(!flag){
+				$("#centernavigation").tabs('add',{
+				"title":'补充学生',
+				"href":'studentReplenish.html',
+				"closable":true
+				})
+			}
+		})
+	</script>
+	
+
+</body>
+</html>

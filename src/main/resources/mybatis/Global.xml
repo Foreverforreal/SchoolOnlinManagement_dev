@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+
+<mapper namespace="global">
+
+	
+	<insert id="insertGlobal_user" parameterType="LJson">
+		<selectKey keyProperty="temp" order="AFTER" resultType="java.lang.String">
+			select LAST_INSERT_ID()
+		</selectKey>
+		insert   global.global_user(user_name,display_name,password)
+		VALUES	 ('${value}_admin','管理员','user@123');
+	</insert>
+
+	<update id="resetautoincreatement" parameterType="java.lang.String">
+		ALTER TABLE `${value}` AUTO_INCREMENT = 1
+	</update>
+	
+	<insert id="insertSchool" parameterType="LJson">
+		<selectKey keyProperty="id" order="AFTER" resultType="java.lang.String">
+			select LAST_INSERT_ID()
+		</selectKey> 
+			insert	 global.school(name, symbol, category_id, banner_image_ids, status, appler_id, updater_id)
+			values	 (#{key},#{value},1,1024,1,1,1);
+	</insert>
+	
+	<select id="selectSchoolId" parameterType="java.lang.String" resultType="java.lang.String">
+		select  id from global.school where `symbol`=#{value}
+	</select>
+	
+	<select id="selectSchoolUrl" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT url FROM npdb.school_db_setting where school_id=#{value}
+	</select>
+	
+	<select id="selectAllSymbol"  resultType="LJson">
+		select  id,`name` `key`,`symbol` `value` from global.school where category_id in (1,3);
+	</select>
+	
+	<insert id="insertDbSetting" parameterType="LJson">
+		ALTER TABLE npdb.school_db_setting AUTO_INCREMENT = 1;
+		insert 	 npdb.school_db_setting(school_id, url, driver_class_name, user_name, password, initial_size, max_active, max_idle, validation_query, status)
+		values(#{id},'jdbc:mysql://qingshuproduct-instance-3.chlhkgnyqqkn.rds.cn-north-1.amazonaws.com.cn:3306/qingshu_${value}?autoReconnect=true&amp;useUnicode=yes&amp;characterEncoding=UTF-8'
+		,'com.mysql.jdbc.Driver','feifanuniv','qyffRocks!9',1,20,1,'SELECT 1 FROM DUAL;',1)
+	</insert>
+	
+	<insert id="insertSchool_module" parameterType="LJson">
+		ALTER TABLE npdb.school_module AUTO_INCREMENT = 1;
+		insert 	 npdb.school_module(school_id, role_id, module_id, parent_module_id, `order`, show_in_homepage, show_in_nav)
+		select   #{id}, role_id, module_id, parent_module_id, `order`, show_in_homepage, show_in_nav
+		from 	 npdb.school_module
+		where 	 school_id =1;
+	</insert>
+
+	
+	<insert id="insertUser_shool" parameterType="LJson">
+		insert 	 global.user_school(user_id,school_id,user_role)
+		values(#{temp},#{id},4)
+	</insert>
+	
+	<select id="selectMappingGlobalIdMajor" parameterType="Major" resultType="Major">
+		select id global_major_id,name,cover_image_id, description introduction_short,#{level} level from global.major where name=SUBSTRING_INDEX(replace(replace(replace(replace('${name}','(函授)',''),'(业余)',''),'(非学历)',''),'(脱产)',''),'-',-1)
+	</select>
+	
+	<select id="selectMappingGlobalIdMajor_remove_school" parameterType="Major" resultType="Major">
+		select id global_major_id,name,cover_image_id, description introduction_short,#{level} level from global.major where name=SUBSTRING_INDEX('${name}','-',-1);
+	</select>
+	
+	<select id="selectGloabalMajor" resultType="LJson">
+	select name value from global.major;
+	</select>
+	
+	<insert id="insertGlobalMajor" parameterType="java.util.List">
+		insert global.major(name,created_school) values
+		<foreach collection="list" item="item" index="index" separator="," >
+		(SUBSTRING_INDEX(replace(replace(replace(replace(#{item.name},'(函授)',''),'(业余)',''),'(非学历)',''),'(脱产)',''),'-',-1),#{item.keyid})
+		</foreach>
+	</insert>
+	
+	<insert id="insertGlobalMajor_remove_school" parameterType="java.util.List">
+		insert global.major(name,created_school) values
+		<foreach collection="list" item="item" index="index" separator="," >
+		(SUBSTRING_INDEX('${item.name}','-',-1),#{item.keyid})
+		</foreach>
+	</insert>
+	
+	<insert id="insertSchoolMajor" parameterType="java.util.List">
+		insert global.school_major(school_id,major_id) values
+		<foreach collection="list" item="item" index="index" separator="," >
+		(#{item.keyid},#{item.global_major_id})
+		</foreach>
+	</insert>
+</mapper>
+	

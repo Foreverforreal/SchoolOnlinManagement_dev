@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC 
+	"-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+
+<mapper namespace="teachingplan">
+	<select id="selectCommon" parameterType="java.lang.String" resultType="LJson">
+		select   '${value}' temp,name value from center
+	</select>
+
+	<update id="resetautoincreatement" parameterType="java.lang.String">
+		ALTER TABLE `${value}` AUTO_INCREMENT = 1
+	</update>
+	
+	<insert id="insertTeacher" parameterType="LJson">
+		insert teacher(global_user_id) values (#{temp});
+		insert teacher_module(teacher_id,module_id) select max(id),14 from teacher;
+	</insert>
+	
+	<update id="creatJxjh" >
+		DROP TABLE IF EXISTS `jxjh`;
+		CREATE TABLE `jxjh`  (
+		  `id` int(11) NOT NULL AUTO_INCREMENT,
+		  `major` varchar(45) DEFAULT NULL,
+		  `level` varchar(45) DEFAULT NULL,
+		  `name` varchar(45) DEFAULT NULL,
+		  `res_course` int(11) DEFAULT NULL,
+		  `term` varchar(45) DEFAULT NULL,
+		  `url` varchar(100) DEFAULT NULL,
+		  `res_courseware` int(11) DEFAULT NULL,
+		  `enroll_year` varchar(45) DEFAULT NULL,
+		  `optional` varchar(5) DEFAULT '0',
+		  PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8
+	</update>
+	
+	<update id="dropJxjh" >
+		Drop TABLE `jxjh` 
+	</update>
+	
+	<insert id="insertJxjh" parameterType="java.util.List">
+		insert jxjh(major, level, name, term, url, enroll_year,res_course,res_courseware,optional)
+		values
+		<foreach collection="list" item="item" index="index" separator="," >
+		(#{item.major},#{item.level},#{item.name},#{item.term},#{item.url},#{item.enroll_year},#{item.res_course},#{item.res_courseware},#{item.optional})   
+		</foreach>
+	</insert>
+	<update id="setLevelAndUrl" >
+		update jxjh set optional='0' where optional is null;
+		update jxjh SET url='' WHERE url is null;
+		update jxjh set level='高起专' where level='高升专' or level='专科';
+		update jxjh set level='高起本' where level='高升本' or level='高达本' or level='本科';
+	</update>
+	
+	<select id="selectRepeatJxjh" resultType="Jxjh">
+		select * from jxjh where (major,level,name,term,enroll_year) in (select major,level,name,term,enroll_year from jxjh group by major,level,name,term,enroll_year having count(1)&gt;1) 
+		union 
+		select * from jxjh where (major,level,name,enroll_year) in (select major,level,name,enroll_year from jxjh group by major,level,name,enroll_year having count(1)&gt;1 ) group by url having count(1)&lt;2 
+		order by enroll_year,major,level,term,name
+	</select>
+	
+	<select id="selectMissFiledsJxjh" resultType="Jxjh">
+		select * from jxjh where major is null or major='' or level is null or level ='' or name is null or name ='' or term is null or term ='' or enroll_year is null or enroll_year ='' or enroll_year not like '201%'
+	</select>
+	
+	<select id="selectWrongLevel" resultType="Jxjh">
+		select * from jxjh where level not in ('高起专','高起本','专升本')
+	</select>
+	<select id="selectRepeatCousre" resultType="Jxjh">
+		select * from jxjh where name in (select name from jxjh group by name having count(1)>1) group by name,url having count(name)=1
+	</select>
+	
+	<select id="selectNewDistinctMajor" resultType="Major">
+		select distinct major name,level from jxjh where (major,level) not in (select name,level from major);
+	</select>
+	
+	<select id="selectDistinctJxjhMajor" resultType="LJson">
+		select distinct major value from jxjh;
+	</select>
+	<select id="selectDistinctJxjhCourse" resultType="LJson">
+		select distinct name value from jxjh;
+	</select>
+	<select id="selectDistinctJxjhLevel" resultType="LJson">
+		select distinct level value from jxjh;
+	</select>
+	<select id="selectDistinctJxjhYear" resultType="LJson">
+		select distinct enroll_year value from jxjh;
+	</select>
+	
+	
+	<insert id="insertMajor" parameterType="java.util.List">
+	insert major(name, level, level_sequence, introduction_short, cover_image_id, show_in_home_page, global_major_id) 
+	values
+	<foreach collection="list" item="item" index="index" separator="," >
+	(#{item.name},#{item.level},0,#{item.introduction_short},#{item.cover_image_id},1,#{item.global_major_id})
+	</foreach>
+	;update major,major_level set major.level_sequence=major_level.level_sequence where major.level = major_level.level_name;
+	</insert>
+	
+	<select id="selectAllMajor" resultType="Major">
+	select * from major;
+	</select>
+	
+	<insert id="insertTeachingplan">
+		INSERT INTO 	teachingplan (name,major_id,semester_id) 
+		SELECT CONCAT	(m.name,'(',m.level,')',j.enroll_year,'年春季教学计划') name,m.id major_id,s.id semester_id  
+		FROM 			major m 
+		JOIN 			jxjh j 
+		ON 				m.name=j.major 
+		AND 			m.level = j.level
+		JOIN 			semester s 
+		ON 				j.enroll_year=s.year 
+		AND 			s.term=1
+		where     		(m.id,s.id) not in (select major_id,semester_id from teachingplan)
+		GROUP BY 		j.major,j.level,j.enroll_year;
+	</insert>
+	<select id="selectTeachingplan" parameterType="java.lang.String" resultType="LJson">
+		select id,name value from teachingplan where major_id=#{value}
+	</select>
+	
+	<select id="selectExsitTeachingplanCourse" resultType="LJson">
+		SELECT		 m.name `key`,m.level `value`,c.name `temp`,j.term `count`
+		FROM 		 jxjh j 
+		INNER JOIN	 major m ON m.name = j.major AND m.level = j.level 
+		INNER JOIN 	 teachingplan t ON t.major_id = m.id 
+		join 		 semester s 
+		on 			 j.enroll_year=s.year 
+		and			 t.semester_id = s.id
+		INNER JOIN   course c 
+		ON 			 c.name = CONCAT(j.name,'(',j.level,')')
+		where 		 (t.id,c.id,j.term) 
+		in			 (select teachingplan_id ,course_id,term from teachingplan_course)
+	</select>
+	
+	<update id="updateCourse">
+	   update  course set courseware_status=3 where  global_courseware_id=0 or global_courseware_id is null;
+	</update>
+	
+	<update id="syncCourse_not_use">
+		update course c,jxjh j set c.base_url=j.url,c.global_courseware_id=j.res_courseware,c.courseware_status=0 where j.name=c.name and j.res_courseware!=0 and c.courseware_status=3 
+	</update>
+	
+	<update id="syncCourse">
+		update course c,jxjh j set c.base_url=j.url,c.global_courseware_id=j.res_courseware,c.courseware_status=0 where concat(j.name,'(',level,')')=c.name and j.res_courseware!=0 and c.courseware_status=3 
+	</update>
+	
+	<insert id="insertCourse">
+		INSERT  		INTO course( name,base_url,global_id,global_courseware_id,courseware_status)
+		SELECT  		CONCAT(name,'(',level,')')  name,url,res_course,res_courseware,0 FROM jxjh 
+		WHERE 			(CONCAT(name,'(',level,')'))
+		NOT IN 			(SELECT name from course) 
+		GROUP BY 		jxjh.name,level;
+	</insert>
+	
+	<insert id="insertCourse_not_use_now">
+		INSERT  		INTO course( name,base_url,global_id,global_courseware_id)
+		SELECT  		name ,url,res_course,res_courseware FROM jxjh 
+		WHERE 			(name)
+		NOT IN 			(SELECT name from course) 
+		GROUP BY 		jxjh.name;
+	</insert>
+	
+	<insert id="insertTeachingplanCourse">
+		INSERT INTO  teachingplan_course( teachingplan_id,course_id,pass_score,term,optional )
+		SELECT		 t.id teachingplan_id,c.id course_id,60 pass_score,j.term,j.optional
+		FROM 		 jxjh j 
+		INNER JOIN	 major m 
+		ON 			 m.name = j.major AND m.level = j.level 
+		INNER JOIN 	 teachingplan t 
+		ON 			 t.major_id = m.id 
+		join 		 semester s 
+		on 			 j.enroll_year=s.year 
+		and			 t.semester_id = s.id
+		INNER JOIN   course c 
+		ON 			 c.name = CONCAT(j.name,'(',j.level,')') 
+		ORDER BY 	 t.id,j.term;
+	</insert>
+	
+	<insert id="insertTeachingplanCourse_not_use_now">
+		INSERT INTO  teachingplan_course( teachingplan_id,course_id,pass_score,term,optional )
+		SELECT		 t.id teachingplan_id,c.id course_id,60 pass_score,j.term,j.optional
+		FROM 		 jxjh j 
+		INNER JOIN	 major m ON m.name = j.major AND m.level = j.level 
+		INNER JOIN 	 teachingplan t ON t.major_id = m.id 
+		join 		 semester s 
+		on 			 j.enroll_year=s.year 
+		and			 t.semester_id = s.id
+		INNER JOIN   course c 
+		ON 			 c.name = j.name
+		ORDER BY 	 t.id,j.term;
+	</insert>
+	
+	<update id="modifyJxjh" parameterType="java.util.HashMap" >
+		update `jxjh` set `term`=`term`*1
+		<if test="newMajor != null  and newMajor != '' ">  
+		, major =#{newMajor} 
+		</if>
+		<if test="newLevel != null  and newLevel != ''">  
+		,level =#{newLevel}
+		</if>
+		<if test="newCourse != null  and newCourse != ''">  
+		,name =#{newCourse}
+		</if>
+		<if test="newYear != null  and newYear != ''">  
+		,enroll_year =#{newYear}
+		</if>
+		where 1=1
+		<if test="oldMajor != null  and oldMajor != ''">  
+		and major=#{oldMajor}
+		</if>
+		<if test="oldLevel != null  and oldLevel != ''">  
+		and level=#{oldLevel}
+		</if>
+		<if test="oldCourse != null  and oldCourse != ''">  
+		and name=#{oldCourse}
+		</if>
+		<if test="oldYear != null  and oldYear != ''">  
+		and enroll_year=#{oldYear}
+		</if>
+	</update>
+	
+	
+	
+	<insert id="copyTeachingplan" parameterType="LJson">
+		<selectKey keyProperty="id" order="AFTER" resultType="java.lang.String">
+			select LAST_INSERT_ID()
+		</selectKey>
+		insert  teachingplan(name ,major_id, semester_id) 
+		select  replace(name,s.year,#{temp}),#{value}),ss.id
+		from    teachingplan t
+		join 	semester s
+		on 		t.semester_id=s.id
+		join    semester ss
+		on      ss.year=#{vlaue} 
+		and     ss.term=1
+		where 	id=#{key};
+	</insert>
+	
+	<insert id="copyTeachingplan_Cousre" parameterType="LJson">
+		insert  teachingplan_course(teachingplan_id, course_id, optional, pass_score, term,usual_score_rule_id, final_score_rule_id)
+		select  #{id}, course_id, optional, pass_score, term,usual_score_rule_id, final_score_rule_id
+		from    teachingplan_course
+		where teachingplan_id=#{key};
+	</insert>
+	
+	<select id="selectTeachingplanMajor" resultType="LJson">
+		select  distinct m.name value from major m 
+		join teachingplan t 
+		on t.major_id=m.id
+	</select>
+	<select id="selectTeachingplanLevel" resultType="LJson">
+		select level value from major where name=#{value}
+	</select>
+	<select id="selectTeachingplanTerm" resultType="LJson">
+		select distinct term value from teachingplan_course 
+	</select>
+	<select id="selectTeachingplanYear" parameterType="java.lang.String" resultType="LJson">
+		select distinct s.year value from semester s 
+		join teachingplan t 
+		on t.semester_id=s.id
+		join major m
+		on m.id=t.major_id
+		and m.name=#{value}
+	</select>
+	
+	<select id="selectAllTeachingplan" resultType="Jxjh" parameterType="LJson">
+		select tc.id id,m.name major,m.level level,replace(c.name,concat('(',m.level,')'),'') name,tc.term term,c.base_url url,s.year enroll_year,c.global_id res_course,c.global_courseware_id res_courseware from teachingplan_course tc 
+		join teachingplan t 
+		on tc.teachingplan_id=t.id 
+		<if test="count != null  and count != ''"> 
+		and tc.term=#{count}
+		</if> 
+		join major m 
+		on t.major_id =m.id 
+		<if test="key != null  and key != ''"> 
+		and m.name=#{key}
+		</if> 
+		<if test="value != null  and value != ''"> 
+		and m.level=#{value}
+		</if> 
+		join course c 
+		on c.id =tc.course_id 
+		join semester s 
+		on t.semester_id=s.id 
+		<if test="temp != null  and temp != ''"> 
+		and s.year=#{temp}
+		</if> 
+		order by s.year,m.name,m.level,tc.term
+	</select>
+</mapper>
+	

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans" 
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:context="http://www.springframework.org/schema/context"
+		xmlns:aop="http://www.springframework.org/schema/aop"
+		xmlns:tx="http://www.springframework.org/schema/tx"
+		xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+							http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+							http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+							http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"
+							default-lazy-init ="true">
+    
+    <!-- Uncomment and add your base-package here:
+         <context:component-scan
+            base-package="org.springframework.samples.service"/>  -->
+            
+    <!-- 加载配置文件  -->
+	<context:property-placeholder location="classpath:/db-loc.properties" /> 
+
+	<!-- dataSource -->
+	<bean id="dataSource-pro-school" class="com.feifanuniv.management.utils.DynamicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${jdbc1.driver}" />
+		<property name="url" value="${jdbc1.url}" />
+		<property name="username" value="${jdbc1.username}" />
+		<property name="password" value="${jdbc1.password}" />
+		<property name="maxActive" value="10" /> 
+		<property name="logAbandoned" value="true"/>
+	</bean>
+	
+	<bean id="dataSource-pro-global" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${jdbc2.driver}" />
+		<property name="url" value="${jdbc2.url}" />
+		<property name="username" value="${jdbc2.username}" />
+		<property name="password" value="${jdbc2.password}" />
+		<property name="maxActive" value="10" /> 
+		<property name="logAbandoned" value="true"/>
+	</bean>
+	
+	<!-- 事务管理 -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">  
+        <property name="dataSource" ref="dataSource-pro-school" />  
+    </bean> 
+    
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="*"  />
+        </tx:attributes>
+    </tx:advice>
+    
+     <aop:config>
+        <aop:pointcut id="interceptorPointCuts" expression="execution(* com.feifanuniv.management.service.*.*(..))" />
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="interceptorPointCuts" />
+	 </aop:config>
+    
+	<!-- sqlSessinFactory -->
+	<bean id="sqlSessionFactory-pro-school" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="configLocation" value="classpath:/mybatis/MybatisConfig.xml"/>
+		<property name="dataSource" ref="dataSource-pro-school" />
+	</bean>
+	<bean id="sqlSessionFactory-pro-global" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="configLocation" value="classpath:/mybatis/MybatisConfig.xml"/>
+		<property name="dataSource" ref="dataSource-pro-global" />
+	</bean>
+	
+	<!-- dao -->
+	<bean id="xueShengDao" class="com.feifanuniv.management.dao.XueShengDao">
+		<property name="sqlSessionFactory_pro_global" ref="sqlSessionFactory-pro-global"></property>
+		<property name="sqlSessionFactory_pro_school" ref="sqlSessionFactory-pro-school"></property>
+	</bean>
+	
+	<bean id="majorDao" class="com.feifanuniv.management.dao.MajorDao">
+		<property name="sqlSessionFactory_pro_school" ref="sqlSessionFactory-pro-school"></property>
+	</bean>
+	
+	<bean id="schoolDao" class="com.feifanuniv.management.dao.SchoolDao">
+		<property name="sqlSessionFactory_pro_global" ref="sqlSessionFactory-pro-global"></property>
+	</bean>
+	
+	<bean id="teachingplanDao" class="com.feifanuniv.management.dao.TeachingplanDao">
+		<property name="sqlSessionFactory_pro_school" ref="sqlSessionFactory-pro-school"></property>
+		<property name="sqlSessionFactory_pro_global" ref="sqlSessionFactory-pro-global"></property>
+	</bean>
+	
+	<!-- entity -->
+	<bean id="LJson" class="com.feifanuniv.management.entity.LJson" >
+	</bean>
+	<!-- service -->
+	<bean id="xueShengService" class="com.feifanuniv.management.service.XueShengService" >
+		<property name="schoolDao" ref="schoolDao"></property>
+		<property name="xueShengDao" ref="xueShengDao"></property>
+	</bean>
+	<bean id="schoolService" class="com.feifanuniv.management.service.TeachingPlanService" >
+		<property name="schoolDao" ref="schoolDao"></property>
+		<property name="teachingplanDao" ref="teachingplanDao"></property>
+		<property name="schoolInfo" ref="LJson"></property>
+	</bean>
+	
+ 
+	
+</beans>

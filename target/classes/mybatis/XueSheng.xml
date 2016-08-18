@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC 
+	"-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="xuesheng">
+
+	<update id="resetautoincreatement" parameterType="java.lang.String">
+		ALTER TABLE `${value}` AUTO_INCREMENT = 1
+	</update>
+
+	<update id="creatXueshengTable" >
+	    DROP TABLE IF EXISTS `xuesheng`;
+		CREATE TABLE `xuesheng` (
+		`id` int(11) NOT NULL AUTO_INCREMENT,
+		`major` varchar(45) DEFAULT NULL,
+		`level` varchar(45) DEFAULT NULL,
+		`center` varchar(45) DEFAULT NULL,
+		`user_name` varchar(45) DEFAULT NULL,
+		`password` varchar(45) DEFAULT NULL,
+		`display_name` varchar(45) DEFAULT NULL,
+		`gender` varchar(45) DEFAULT NULL,
+		`student_number` varchar(45) DEFAULT NULL,
+		`identity_card` varchar(18) DEFAULT NULL,
+		`enroll_year` varchar(4) DEFAULT NULL,
+		`phone_num` varchar(100) DEFAULT NULL,
+		`address` varchar(45) DEFAULT NULL,
+		PRIMARY KEY (`id`)
+		) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8
+	</update>
+	
+	<update id="creatTempUser" >
+	    DROP TABLE IF EXISTS `tempuser`;
+		CREATE TABLE `tempuser` (
+		`id` int(11) NOT NULL AUTO_INCREMENT,
+		`user_name` varchar(45) DEFAULT NULL,
+		`display_name` varchar(45) DEFAULT NULL,
+		`password` varchar(45) DEFAULT NULL,
+		`gender` varchar(45) DEFAULT NULL,
+		`phone_num` varchar(100) DEFAULT NULL,
+		`address` varchar(45) DEFAULT NULL,
+		`identity_card` varchar(45) DEFAULT NULL,
+		`keyid` varchar(20) NOT NULL,
+		PRIMARY KEY (`id`)
+		) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8
+	</update>
+	
+	<insert id="insertTempUser"	parameterType="java.util.List">
+		insert tempuser(id,user_name, display_name,password, gender, phone_num, address, identity_card,keyid) 
+		values
+		<foreach collection="list" item="item" index="index" separator="," >    
+		(#{item.id},#{item.user_name},#{item.display_name},#{item.password},#{item.gender},#{item.phone_num},#{item.address},#{item.identity_card},${item.id}+10000)
+		</foreach> 
+	</insert>
+	
+	<insert id="insertGlobalUserTempkey"  parameterType="LJson">
+		alter table global_user AUTO_INCREMENT = 1;
+		<selectKey keyProperty="id" order="AFTER" resultType="String">
+			select LAST_INSERT_ID()
+		</selectKey>
+		insert global_user(display_name,photo_image_id) select '',keyid from tempuser where user_name not in (select user_name from global_user where user_name is not null);
+	</insert>
+	
+	<update id="updateTempuserKeyid" parameterType="LJson" >
+		update tempuser t,global_user g set t.keyid=g.id where t.keyid=g.photo_image_id and g.id>=#{id}
+	</update>
+	
+	<update id="updateGlobalUser"  >
+		update tempuser t,global_user g 
+		set g.user_name=t.user_name,
+			g.display_name=t.display_name,
+			g.password=t.password,
+			g.gender=t.gender,
+			g.phone_num=t.phone_num,
+			g.address=t.address,
+			g.identity_card=t.identity_card,
+			g.photo_image_id=null
+		where g.id=t.keyid;
+	</update>
+	
+	<select id="selectAllTempuser" resultType="XueSheng"> 
+		select * from tempuser;
+	</select>
+	
+	<update id="updateXuesheng" parameterType="java.util.List" >
+		ALTER TABLE `xuesheng` 
+		ADD COLUMN `keyid` INT NULL COMMENT '' AFTER `address`;
+		<foreach collection="list" item="item" index="index" >    
+		update `xuesheng` set keyid =#{item.keyid} where id=#{item.id};
+		</foreach>
+	</update>
+	
+	<update id="dropTempuser" >
+		drop table  `tempuser`;
+	</update>
+	
+	<insert id="insertStudent">
+		insert  student(global_user_id,major_id,center_id,gender,student_number,identity_card,semester_id,phone_num,address) 
+		select  x.keyid,m.id,c.id,x.gender,x.student_number,x.identity_card,s.id,x.phone_num,x.address from xuesheng x 
+		left join    center c 
+		on      c.name = x.center 
+		join    semester s 
+		on      s.year = x.enroll_year and s.term = 1 
+		join    major m 
+		on      m.name = x.major 
+		and     m.level = x.level
+		where   (x.major,x.level ) in (select name,level from major)
+		order by x.id;
+	</insert>
+	
+	<update id="dropXuesheng" >
+		drop table  `xuesheng`;
+	</update>
+
+	<insert id="insertXueSheng" parameterType="java.util.List" >
+		insert xuesheng( major, level, center, user_name, password,display_name, gender, student_number, identity_card, enroll_year,phone_num,address) 
+		values
+		<foreach collection="list" item="item" index="index" separator="," >    
+		(#{item.major},#{item.level},#{item.center},#{item.user_name},#{item.password},#{item.display_name},#{item.gender},#{item.student_number},#{item.identity_card},#{item.enroll_year},#{item.phone_num},#{item.address})
+		</foreach> 
+	</insert>
+	
+	<select id="selectRepeatUserName" resultType="XueSheng">
+		select * from xuesheng group by user_name having count(user_name)>1
+	</select>
+	
+	<update id="updateXueShengLevel">
+		update xuesheng set level='高起专' where level='高升专' or level='专科';
+		update xuesheng set level='高起本' where level='高升本' or level='高达本';
+		update xuesheng set level='专升本' where level='本科';
+	</update>
+	
+	<insert id="insertGlobalUser" parameterType="XueSheng" >
+		<selectKey keyProperty="keyid" order="AFTER" resultType="java.lang.String">
+			select LAST_INSERT_ID()
+		</selectKey>
+		insert global_user(user_name, display_name,password, gender, phone_num, address, identity_card) 
+		values
+		(#{user_name},#{display_name},#{password},#{gender},#{phone_num},#{address},#{identity_card})
+	</insert>
+	
+	<insert id="insertUserSchool" parameterType="java.util.List" >
+		insert user_school(user_id,school_id,user_role) 
+		values
+		<foreach collection="list" item="item" index="index" separator="," >    
+		(#{item.key},#{item.value},1)
+		</foreach>    
+	</insert>
+	
+	<!--
+		<insert id="insertGlobalUser" parameterType="java.util.List" >
+		<selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+			select LAST_INSERT_ID()
+		</selectKey>
+		insert global_user(user_name, display_name,password, gender, phone_num, address, identity_card) 
+		values
+		<foreach collection="list" item="item" index="index" separator="," >    
+		(#{item.user_name},#{item.display_name},#{item.password},#{item.gender},#{item.phone},#{item.address},#{item.identity_card})
+		</foreach> 
+	</insert>
+	  -->
+	
+	<insert id="insertCenter">
+		insert center(name,address)
+		select distinct center,'' from xuesheng
+		where center not in (select name from center)
+	</insert>
+	
+	<select id="selectAllXueSheng"  resultType="XueSheng">
+		select * from `xuesheng` 
+	</select>
+	
+	<select id="selectMappingXueSheng"  resultType="XueSheng">
+		select * from `xuesheng` where (major,level ) in (select name,level from major)
+	</select>
+	
+	<select id="selectNoMappingMajorXueSheng"  resultType="XueSheng">
+		select * from `xuesheng` where (major,level ) not in (select name,level from major) order by major,level,center
+	</select>
+	
+	<select id="selectNoMappingTeachingPlanXueSheng"  resultType="LJson">
+		select 	 m.id id,m.name `key`,m.`level` `value`,se.`year` temp,count(1) count 
+		from 	 student s 
+        join 	 major m 
+        on 		 s.major_id=m.id 
+        join 	 semester se
+		on 		 s.semester_id =se.id
+        where    (m.id,se.id) not in (select major_id ,semester_id from teachingplan)
+        group by m.name,m.level,se.year;
+	</select>
+	
+	<select id="selectCountNoMappingXueSheng" >
+		select count(1) from xuesheng where (major,level )  not in (select name,level from major)
+	</select>
+	
+	<select id="selectCountNoMappingMajor" resultType="Major">
+		select  major,level from xuesheng 
+		where (major,level )  not in (select name,level from major)
+		group by major,level;
+	</select>
+	
+	<select id="selectXueShengMajor" resultType="LJson">
+		select  distinct `major` value from xuesheng where (`major`,`level`) not in (select name,level from major)
+	</select>
+	
+	<select id="selectMajor" resultType="LJson">
+		select  distinct `name` value from major 
+	</select>
+	<select id="selectMajorLevel" parameterType="java.lang.String" resultType="LJson">
+		select  `level` value from major where name=#{value}
+	</select>
+	
+	<select id="selectXueShengLevel" resultType="LJson">
+		select  distinct `level` value from xuesheng 
+	</select>
+	<select id="selectExistMajorLevel" resultType="LJson">
+		select  `name` as `key`,`level` as `value` from major order by `key` ,`value`
+	</select>
+	
+	<select id="selectSchoolId" parameterType="java.lang.String" resultType="java.lang.String">
+		select  id from school where `symbol`=#{value}
+	</select>
+	
+	<update id="modifyXuesheng" parameterType="java.util.HashMap" >
+		update `xuesheng` set `enroll_year`=`enroll_year`*1
+		<if test="newMajor != null  and newMajor != '' ">  
+		, major =#{newMajor} 
+		</if>
+		<if test="newLevel != null  and newLevel != ''">  
+		,level =#{newLevel}
+		</if>
+		where 1=1
+		<if test="oldMajor != null  and oldMajor != ''">  
+		and major=#{oldMajor}
+		</if>
+		<if test="newLevel != null  and oldLevel != ''">  
+		and level=#{oldLevel}
+		</if>
+	</update>
+</mapper>

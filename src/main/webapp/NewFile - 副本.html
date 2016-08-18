@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+		<link rel="stylesheet" type="text/css" href="resources/ui/themes/bootstrap/easyui.css">
+		<link rel="stylesheet" type="text/css" href="resources/ui/themes/icon.css">
+		<script type="text/javascript" src="resources/ui/jquery.min.js"></script>
+		<script type="text/javascript" src="resources/ui/jquery.easyui.min.js"></script>
+</head>
+<body>
+
+		<input  id=2 class="easyui-combobox"  />
+		
+		<input id=1 class="easyui-combobox" data-options="
+		valueField: 'label',
+		textField: 'value',
+		data: [{
+			label: 'java',
+			value: 'Java'
+		},{
+			label: 'perl',
+			value: 'Perl'
+		},{
+			label: 'ruby',
+			value: 'Ruby'
+		}]" />
+<script type="text/javascript">
+			$('#1').combobox({
+				onSelect: function(){
+					alert("1");
+				}
+			});
+		$('#2').combobox('setValue', '001');
+</script>
+	
+</body>
+</html>

@@ -1,0 +1,12 @@
+@CHARSET "UTF-8";
+	.forminput{
+		width:95px;
+	}
+	.filedmes{
+	font-family: 微软雅黑;
+	zoom:1.1;
+	}
+	#submitimg:HOVER {
+			-webkit-box-shadow:3px 3px 10px #9edeff;
+			box-shadow:3px 3px 10px #eaeaea ;
+		}
