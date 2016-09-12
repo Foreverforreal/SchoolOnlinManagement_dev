@@ -50,7 +50,7 @@
 	<update id="setLevelAndUrl" >
 		update jxjh set optional='0' where optional is null;
 		update jxjh SET url='' WHERE url is null;
-		update jxjh set level='高起专' where level='高升专' or level='专科';
+		update jxjh set level='高起专' where level='高升专' or level='专科' or level='高达专';
 		update jxjh set level='高起本' where level='高升本' or level='高达本' or level='本科';
 	</update>
 	
